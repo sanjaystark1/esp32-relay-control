@@ -1,198 +1,387 @@
+```html
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
 
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-<title>ESP32 Relay Control</title>
+    <title>ESP32 Relay Control</title>
 
-<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <!-- MQTT.js -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
-<style>
+    <style>
 
-body {
-    font-family: Arial, sans-serif;
-    background: #f2f2f2;
-    margin: 0;
-    padding: 20px;
-}
+        * {
+            box-sizing: border-box;
+        }
 
-.container {
-    max-width: 500px;
-    margin: auto;
-}
+        body {
+            margin: 0;
+            padding: 20px;
 
-h1 {
-    text-align: center;
-}
+            font-family: Arial, sans-serif;
 
-.status {
-    text-align: center;
-    padding: 12px;
-    margin-bottom: 20px;
-    background: white;
-    border-radius: 10px;
-}
+            background: #f1f3f6;
 
-.relay {
-    background: white;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 15px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-}
+            color: #222;
+        }
 
-.relay h2 {
-    margin-top: 0;
-}
+        .container {
+            width: 100%;
+            max-width: 500px;
 
-.state {
-    font-size: 20px;
-    margin-bottom: 15px;
-}
+            margin: auto;
+        }
 
-button {
-    width: 48%;
-    padding: 15px;
-    font-size: 18px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-}
+        .header {
+            text-align: center;
 
-.on {
-    background: #28a745;
-    color: white;
-}
+            margin-bottom: 20px;
+        }
 
-.off {
-    background: #dc3545;
-    color: white;
-}
+        .header h1 {
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
 
-button:active {
-    transform: scale(0.98);
-}
+        .header p {
+            margin-top: 0;
+            color: #666;
+        }
 
-</style>
+        /* MQTT STATUS */
+
+        .connection {
+            background: white;
+
+            padding: 15px;
+
+            border-radius: 14px;
+
+            text-align: center;
+
+            margin-bottom: 20px;
+
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+
+        .status-dot {
+            display: inline-block;
+
+            width: 12px;
+            height: 12px;
+
+            border-radius: 50%;
+
+            background: #dc3545;
+
+            margin-right: 7px;
+        }
+
+        /* RELAY CARD */
+
+        .relay-card {
+            background: white;
+
+            padding: 22px;
+
+            margin-bottom: 20px;
+
+            border-radius: 18px;
+
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+
+        .relay-title {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            margin-bottom: 15px;
+        }
+
+        .relay-title h2 {
+            margin: 0;
+
+            font-size: 22px;
+        }
+
+        .relay-number {
+            font-size: 14px;
+
+            color: #777;
+        }
+
+        .relay-status {
+            text-align: center;
+
+            font-size: 20px;
+
+            font-weight: bold;
+
+            margin-bottom: 20px;
+
+            padding: 12px;
+
+            border-radius: 10px;
+
+            background: #f1f1f1;
+        }
+
+        /* BUTTONS */
+
+        .buttons {
+            display: flex;
+
+            gap: 12px;
+        }
+
+        button {
+            flex: 1;
+
+            border: none;
+
+            padding: 17px 10px;
+
+            border-radius: 12px;
+
+            font-size: 18px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            color: white;
+
+            transition: 0.15s;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        .on-button {
+            background: #198754;
+        }
+
+        .off-button {
+            background: #dc3545;
+        }
+
+        button:disabled {
+            background: #aaa;
+
+            cursor: not-allowed;
+        }
+
+        /* FOOTER */
+
+        .footer {
+            text-align: center;
+
+            color: #777;
+
+            font-size: 13px;
+
+            margin-top: 25px;
+        }
+
+    </style>
 
 </head>
 
 
 <body>
 
+
 <div class="container">
 
-<h1>ESP32 Relay Control</h1>
 
-<div class="status">
+    <!-- HEADER -->
 
-    MQTT Status:
+    <div class="header">
 
-    <strong id="mqttStatus">
-        Disconnected
-    </strong>
+        <h1>ESP32 Control</h1>
+
+        <p>2-Channel Relay Controller</p>
+
+    </div>
+
+
+    <!-- MQTT STATUS -->
+
+    <div class="connection">
+
+        <span id="statusDot"
+              class="status-dot"></span>
+
+        <span id="mqttStatus">
+            Disconnected
+        </span>
+
+    </div>
+
+
+    <!-- RELAY 1 -->
+
+    <div class="relay-card">
+
+        <div class="relay-title">
+
+            <h2>Relay 1</h2>
+
+            <span class="relay-number">
+                GPIO 26
+            </span>
+
+        </div>
+
+
+        <div id="relay1Status"
+             class="relay-status">
+
+            OFF
+
+        </div>
+
+
+        <div class="buttons">
+
+            <button
+                id="relay1On"
+                class="on-button"
+                onclick="controlRelay1('ON')"
+                disabled>
+
+                ON
+
+            </button>
+
+
+            <button
+                id="relay1Off"
+                class="off-button"
+                onclick="controlRelay1('OFF')"
+                disabled>
+
+                OFF
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- RELAY 2 -->
+
+    <div class="relay-card">
+
+        <div class="relay-title">
+
+            <h2>Relay 2</h2>
+
+            <span class="relay-number">
+                GPIO 27
+            </span>
+
+        </div>
+
+
+        <div id="relay2Status"
+             class="relay-status">
+
+            OFF
+
+        </div>
+
+
+        <div class="buttons">
+
+            <button
+                id="relay2On"
+                class="on-button"
+                onclick="controlRelay2('ON')"
+                disabled>
+
+                ON
+
+            </button>
+
+
+            <button
+                id="relay2Off"
+                class="off-button"
+                onclick="controlRelay2('OFF')"
+                disabled>
+
+                OFF
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div class="footer">
+
+        ESP32 • MQTT • HiveMQ Cloud
+
+    </div>
+
 
 </div>
 
-
-<!-- RELAY 1 -->
-
-<div class="relay">
-
-<h2>Relay 1</h2>
-
-<div class="state">
-
-Status:
-
-<span id="relay1Status">
-OFF
-</span>
-
-</div>
-
-<button class="on"
-        onclick="relay1('ON')">
-
-ON
-
-</button>
-
-<button class="off"
-        onclick="relay1('OFF')">
-
-OFF
-
-</button>
-
-</div>
-
-
-<!-- RELAY 2 -->
-
-<div class="relay">
-
-<h2>Relay 2</h2>
-
-<div class="state">
-
-Status:
-
-<span id="relay2Status">
-OFF
-</span>
-
-</div>
-
-<button class="on"
-        onclick="relay2('ON')">
-
-ON
-
-</button>
-
-<button class="off"
-        onclick="relay2('OFF')">
-
-OFF
-
-</button>
-
-</div>
-
-
-</div>
 
 
 <script>
 
-// =============================================
-// HIVEMQ CLOUD
-// =============================================
 
-// Replace with your HiveMQ Cloud cluster.
+// ==================================================
+// HIVEMQ CLOUD SETTINGS
+// ==================================================
+
+// PUT YOUR HIVEMQ CLUSTER HOSTNAME HERE
+//
+// Example:
+// abc123.s1.eu.hivemq.cloud
 
 const MQTT_HOST =
     "luckysweat-ff00fed6.a01.euc1.aws.hivemq.cloud";
 
+
+// MQTT over Secure WebSockets
+
 const MQTT_PORT = 8884;
+
+
+// PUT YOUR HIVEMQ USERNAME HERE
 
 const MQTT_USERNAME =
     "SAN";
+
+
+// PUT YOUR HIVEMQ PASSWORD HERE
+//
+// WARNING:
+// Do not use a permanent password in a public
+// GitHub repository.
 
 const MQTT_PASSWORD =
     "Eamt8784#";
 
 
-// =============================================
-// TOPICS
-// =============================================
+// ==================================================
+// MQTT TOPICS
+// ==================================================
 
 const RELAY1_TOPIC =
     "sanjay/esp32/relay1";
@@ -201,171 +390,493 @@ const RELAY2_TOPIC =
     "sanjay/esp32/relay2";
 
 
-// =============================================
-// CONNECT
-// =============================================
+// ==================================================
+// CREATE UNIQUE CLIENT ID
+// ==================================================
 
 const clientID =
-    "Web-" +
+    "WebRelay-" +
     Math.random()
-    .toString(16)
-    .substring(2);
+        .toString(16)
+        .substring(2);
 
 
-const client = mqtt.connect(
+// ==================================================
+// MQTT CONNECTION
+// ==================================================
 
-    "wss://" +
-    MQTT_HOST +
-    ":" +
-    MQTT_PORT +
-    "/mqtt",
+const client =
+    mqtt.connect(
 
+        "wss://" +
+        MQTT_HOST +
+        ":" +
+        MQTT_PORT +
+        "/mqtt",
+
+        {
+
+            username:
+                MQTT_USERNAME,
+
+            password:
+                MQTT_PASSWORD,
+
+            clientId:
+                clientID,
+
+            clean: true,
+
+            reconnectPeriod: 2000,
+
+            connectTimeout: 10000
+
+        }
+
+    );
+
+
+// ==================================================
+// HTML ELEMENTS
+// ==================================================
+
+const mqttStatus =
+    document.getElementById(
+        "mqttStatus"
+    );
+
+const statusDot =
+    document.getElementById(
+        "statusDot"
+    );
+
+
+// ==================================================
+// ENABLE / DISABLE BUTTONS
+// ==================================================
+
+function setButtons(enabled)
+{
+
+    document.getElementById(
+        "relay1On"
+    ).disabled = !enabled;
+
+    document.getElementById(
+        "relay1Off"
+    ).disabled = !enabled;
+
+    document.getElementById(
+        "relay2On"
+    ).disabled = !enabled;
+
+    document.getElementById(
+        "relay2Off"
+    ).disabled = !enabled;
+
+}
+
+
+// ==================================================
+// MQTT CONNECTED
+// ==================================================
+
+client.on(
+    "connect",
+    function()
     {
-        username: MQTT_USERNAME,
-        password: MQTT_PASSWORD,
 
-        clientId: clientID,
+        console.log(
+            "MQTT Connected"
+        );
 
-        clean: true,
 
-        reconnectPeriod: 2000
+        mqttStatus.innerText =
+            "Connected";
+
+
+        statusDot.style.background =
+            "#198754";
+
+
+        setButtons(true);
+
+
+        // Subscribe to Relay 1
+
+        client.subscribe(
+            RELAY1_TOPIC,
+            function(error)
+            {
+
+                if (error)
+                {
+
+                    console.log(
+                        "Relay 1 subscribe error:",
+                        error
+                    );
+
+                }
+
+            }
+        );
+
+
+        // Subscribe to Relay 2
+
+        client.subscribe(
+            RELAY2_TOPIC,
+            function(error)
+            {
+
+                if (error)
+                {
+
+                    console.log(
+                        "Relay 2 subscribe error:",
+                        error
+                    );
+
+                }
+
+            }
+        );
+
     }
 );
 
 
-// =============================================
-// CONNECTED
-// =============================================
+// ==================================================
+// MQTT OFFLINE
+// ==================================================
 
-client.on("connect", function()
-{
-
-    document.getElementById(
-        "mqttStatus"
-    ).innerText = "Connected";
-
-    console.log("MQTT connected");
-
-
-    client.subscribe(RELAY1_TOPIC);
-
-    client.subscribe(RELAY2_TOPIC);
-
-});
-
-
-// =============================================
-// DISCONNECTED
-// =============================================
-
-client.on("offline", function()
-{
-
-    document.getElementById(
-        "mqttStatus"
-    ).innerText = "Disconnected";
-
-});
-
-
-// =============================================
-// ERROR
-// =============================================
-
-client.on("error", function(error)
-{
-
-    console.log("MQTT Error:", error);
-
-    document.getElementById(
-        "mqttStatus"
-    ).innerText = "Error";
-
-});
-
-
-// =============================================
-// RECEIVE MESSAGE
-// =============================================
-
-client.on("message", function(topic, message)
-{
-
-    const command =
-        message.toString();
-
-
-    if (topic === RELAY1_TOPIC)
+client.on(
+    "offline",
+    function()
     {
 
+        console.log(
+            "MQTT Offline"
+        );
+
+
+        mqttStatus.innerText =
+            "Disconnected";
+
+
+        statusDot.style.background =
+            "#dc3545";
+
+
+        setButtons(false);
+
+    }
+);
+
+
+// ==================================================
+// MQTT RECONNECTING
+// ==================================================
+
+client.on(
+    "reconnect",
+    function()
+    {
+
+        console.log(
+            "MQTT Reconnecting..."
+        );
+
+
+        mqttStatus.innerText =
+            "Connecting...";
+
+
+        statusDot.style.background =
+            "#ffc107";
+
+
+        setButtons(false);
+
+    }
+);
+
+
+// ==================================================
+// MQTT ERROR
+// ==================================================
+
+client.on(
+    "error",
+    function(error)
+    {
+
+        console.log(
+            "MQTT Error:",
+            error
+        );
+
+
+        mqttStatus.innerText =
+            "Connection Error";
+
+
+        statusDot.style.background =
+            "#dc3545";
+
+
+        setButtons(false);
+
+    }
+);
+
+
+// ==================================================
+// RECEIVE MQTT MESSAGE
+// ==================================================
+
+client.on(
+    "message",
+    function(topic, message)
+    {
+
+        const command =
+            message.toString()
+                .trim()
+                .toUpperCase();
+
+
+        console.log(
+            "Received:",
+            topic,
+            command
+        );
+
+
+        // ------------------------------
+        // RELAY 1
+        // ------------------------------
+
+        if (
+            topic === RELAY1_TOPIC
+        )
+        {
+
+            updateRelay1(
+                command
+            );
+
+        }
+
+
+        // ------------------------------
+        // RELAY 2
+        // ------------------------------
+
+        if (
+            topic === RELAY2_TOPIC
+        )
+        {
+
+            updateRelay2(
+                command
+            );
+
+        }
+
+    }
+);
+
+
+// ==================================================
+// UPDATE RELAY 1 DISPLAY
+// ==================================================
+
+function updateRelay1(
+    command
+)
+{
+
+    const element =
         document.getElementById(
             "relay1Status"
-        ).innerText = command;
-
-    }
+        );
 
 
-    if (topic === RELAY2_TOPIC)
+    if (command === "ON")
     {
 
-        document.getElementById(
-            "relay2Status"
-        ).innerText = command;
+        element.innerText =
+            "ON";
+
+        element.style.background =
+            "#d1e7dd";
+
+        element.style.color =
+            "#0f5132";
 
     }
 
-});
+    else if (
+        command === "OFF"
+    )
+    {
+
+        element.innerText =
+            "OFF";
+
+        element.style.background =
+            "#f8d7da";
+
+        element.style.color =
+            "#842029";
+
+    }
+
+}
 
 
-// =============================================
-// RELAY 1
-// =============================================
+// ==================================================
+// UPDATE RELAY 2 DISPLAY
+// ==================================================
 
-function relay1(command)
+function updateRelay2(
+    command
+)
 {
 
-    if (!client.connected)
+    const element =
+        document.getElementById(
+            "relay2Status"
+        );
+
+
+    if (command === "ON")
     {
-        alert("MQTT not connected");
-        return;
+
+        element.innerText =
+            "ON";
+
+        element.style.background =
+            "#d1e7dd";
+
+        element.style.color =
+            "#0f5132";
+
     }
+
+    else if (
+        command === "OFF"
+    )
+    {
+
+        element.innerText =
+            "OFF";
+
+        element.style.background =
+            "#f8d7da";
+
+        element.style.color =
+            "#842029";
+
+    }
+
+}
+
+
+// ==================================================
+// CONTROL RELAY 1
+// ==================================================
+
+function controlRelay1(
+    command
+)
+{
+
+    if (
+        !client.connected
+    )
+    {
+
+        alert(
+            "MQTT is not connected."
+        );
+
+        return;
+
+    }
+
+
+    console.log(
+        "Relay 1:",
+        command
+    );
+
 
     client.publish(
         RELAY1_TOPIC,
         command
     );
 
-    document.getElementById(
-        "relay1Status"
-    ).innerText = command;
+
+    // Immediately update UI
+
+    updateRelay1(
+        command
+    );
+
 }
 
 
-// =============================================
-// RELAY 2
-// =============================================
+// ==================================================
+// CONTROL RELAY 2
+// ==================================================
 
-function relay2(command)
+function controlRelay2(
+    command
+)
 {
 
-    if (!client.connected)
+    if (
+        !client.connected
+    )
     {
-        alert("MQTT not connected");
+
+        alert(
+            "MQTT is not connected."
+        );
+
         return;
+
     }
+
+
+    console.log(
+        "Relay 2:",
+        command
+    );
+
 
     client.publish(
         RELAY2_TOPIC,
         command
     );
 
-    document.getElementById(
-        "relay2Status"
-    ).innerText = command;
+
+    // Immediately update UI
+
+    updateRelay2(
+        command
+    );
+
 }
 
+
 </script>
+
 
 </body>
 
 </html>
+```
